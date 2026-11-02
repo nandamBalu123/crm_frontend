@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local file storage (tenant uploads)
+storage-data/
+
+# Test output
+coverage/
+
+# Logs
+logs/
+*.log
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/

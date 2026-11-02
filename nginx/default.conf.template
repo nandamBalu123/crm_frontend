@@ -1,0 +1,28 @@
+# Serves the SPA and reverse-proxies /api to the API so browser and API share one origin.
+# Rendered at container start by the nginx image's envsubst step:
+#   API_UPSTREAM      backend base URL, e.g. http://api:4000 or https://api.example.com
+#   CSP_CONNECT_SRC   extra connect-src origins (only needed when the SPA is built with VITE_API_URL)
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  client_max_body_size 25m;
+
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
+  add_header X-Frame-Options DENY always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+  add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ${CSP_CONNECT_SRC}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+  location /api/ {
+    proxy_pass ${API_UPSTREAM};
+    proxy_ssl_server_name on;
+    proxy_set_header Host $proxy_host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+  location /health/ { proxy_pass ${API_UPSTREAM}; proxy_ssl_server_name on; proxy_set_header Host $proxy_host; }
+  location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; }
+  location / { try_files $uri /index.html; add_header Cache-Control "no-cache"; }
+}
